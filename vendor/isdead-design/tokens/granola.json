@@ -1,0 +1,86 @@
+{
+  "name": "granola",
+  "source": "granola.ai look (warm cream paper, serif headlines, soft green accent, calm minimal chrome), measured 2026-10-14; original art",
+  "font": {
+    "sans": "Hanken Grotesk",
+    "display": "Newsreader",
+    "files": {
+      "Hanken Grotesk": "granola/HankenGrotesk-Variable.woff2",
+      "Newsreader": "granola/Newsreader-Variable.woff2"
+    },
+    "mono": "ui-monospace, SFMono-Regular, Menlo, monospace",
+    "note": "Granola's marketing serif/sans pairing is proprietary and is not shipped. Newsreader (OFL) display serif and Hanken Grotesk (OFL) body are our lookalikes: editorial text serif with a humanist sans."
+  },
+  "color": {
+    "bg": "#FBF8F1",
+    "surface": "#FFFDF8",
+    "surfaceAlt": "#F2EEE3",
+    "text": "#1F2A1E",
+    "textMuted": "#5E675C",
+    "textSubtle": "#8E9689",
+    "border": "#E3DECF",
+    "borderStrong": "#1F2A1E",
+    "danger": "#C62828",
+    "success": "#1B7F4B",
+    "warning": "#B7791F",
+    "onPrimary": "#FFFDF8",
+    "onAccent": "#FFFFFF",
+    "primary": "#2F5D3A",
+    "primaryHover": "#244A2E",
+    "accent": "#5BA86B",
+    "accentHover": "#468F56",
+    "accentSoft": "#DDEFD9",
+    "focus": "#2F5D3A",
+    "heroFrom": "#FBF8F1",
+    "heroMid": "#EAF3DF",
+    "heroTo": "#FBE9C9"
+  },
+  "radius": {
+    "xs": "4px",
+    "sm": "6px",
+    "md": "10px",
+    "lg": "14px",
+    "xl": "24px",
+    "pill": "9999px"
+  },
+  "space": {
+    "1": "4px",
+    "2": "8px",
+    "3": "12px",
+    "4": "16px",
+    "5": "20px",
+    "6": "24px",
+    "8": "32px",
+    "10": "40px",
+    "12": "48px",
+    "16": "64px"
+  },
+  "shadow": {
+    "sm": "0 1px 2px rgba(31,42,30,.07)",
+    "md": "0 6px 20px rgba(31,42,30,.09)",
+    "lg": "0 20px 56px rgba(31,42,30,.14)"
+  },
+  "type": {
+    "xs": "12px",
+    "sm": "14px",
+    "md": "16px",
+    "lg": "18px",
+    "xl": "24px",
+    "2xl": "32px",
+    "3xl": "48px",
+    "4xl": "68px",
+    "weightBody": 400,
+    "weightStrong": 600,
+    "weightHeading": 500,
+    "tracking": "-0.02em",
+    "lineHeight": 1.5
+  },
+  "control": {
+    "height": "46px",
+    "heightSm": "34px",
+    "borderWidth": "1px",
+    "buttonRadius": "10px",
+    "inputRadius": "10px",
+    "cardRadius": "20px"
+  }
+}
