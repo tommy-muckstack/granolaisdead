@@ -1,2 +1,2 @@
-import { Marketing } from "@/components/Marketing";
-export default function Home() { return <Marketing />; }
+import { GnHome } from "@/components/GnHome";
+export default function Home() { return <GnHome />; }
