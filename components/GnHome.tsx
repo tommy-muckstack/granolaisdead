@@ -4,7 +4,7 @@ import "./gnhome.css";
 
 export const GnMark = ({ s = 22 }: { s?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" aria-hidden><path d="M12 3a9 9 0 100 18 9 9 0 01-4-7.5 5 5 0 019.5-1.5 3 3 0 11-4.5-2.5 1.8 1.8 0 10-1.5 3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>;
 export function GnNav() {
-  return <header className="gn-nav"><Link href="/" className="lg"><GnMark /> granola</Link><nav><a>Features</a><a>Enterprise</a><Link href="/#pricing">Pricing</Link><a>Blog</a><a>Careers</a></nav><span className="sp" /><Link href="/login" className="a">Talk to sales</Link><Link href="/login" className="b"><i /> Download</Link></header>;
+  return <header className="gn-nav"><Link href="/" className="lg"><GnMark /> granola</Link><nav><a>Features</a><a>Enterprise</a><Link href="/#pricing">Pricing</Link><a>Blog</a><a>Careers</a></nav><span className="sp" /><Link href="/login" className="a">Talk to sales</Link><Link href="/login" className="b"><i /><span className="dk"> Download</span><span className="ga">Get the app</span></Link></header>;
 }
 const FCOL: [string, string[]][] = [["Features", ["Notepad", "Chat", "Mobile"]], ["Product", ["Pricing", "Enterprise", "Integrations", "AI notepad vs notetaker", "AI meeting assistant", "For sales", "For product management", "MCP", "Explore more…"]], ["Company", ["Customers", "Careers", "Press", "Events", "Startup program", "Student program", "Nonprofit program"]], ["Resources", ["Blog", "Security", "Transparency", "Help Center", "Status", "Affiliates", "Contact us", "Terms", "Privacy", "License"]]];
 export function GnFoot() {

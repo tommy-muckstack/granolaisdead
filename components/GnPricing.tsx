@@ -21,11 +21,11 @@ export function GnPricing() {
       <h1 className="t">Notes how you wanna</h1>
       <p className="sub">Pick the plan that is right for you and your team, so everyone can be on the same page.</p>
       <div className="plans">
-        <div className="pl"><h2>Basic</h2><p className="d">Great for a free taste of the app</p><div className="pr"><b>$0</b><span>per user per month</span></div><a className="dl"><i className="ap" />Download for Mac</a>
+        <div className="pl"><h2>Basic</h2><p className="d">Great for a free taste of the app</p><div className="pr"><b>$0</b><span>per user per month</span></div><a className="dl"><i className="ap" />Get the Desktop app</a>
           <ul><Li>AI meeting notes</Li><Li>Limited meeting history</Li><Li>AI chat within and across meetings</Li><Li>Shared folders for collaboration</Li><Li>Customized note templates</Li><Li>Multi-language support</Li><Li>Opt out of model training at any time</Li></ul></div>
-        <div className="pl"><h2>Business</h2><p className="d">Great for individuals or small teams</p><div className="pr"><b>$14</b><span>per user per month</span></div><a className="dl"><i className="ap" />Download for Mac</a>
+        <div className="pl"><h2>Business</h2><p className="d">Great for individuals or small teams</p><div className="pr"><b>$14</b><span>per user per month</span></div><a className="dl"><i className="ap" />Get the Desktop app</a>
           <ul><Li bold>Everything in Basic, plus</Li><Li>Unlimited meeting notes and history</Li><Li>Access to advanced AI thinking models and features</Li><Li>Advanced integrations with docs, CRM and chat tools</Li><Li>Centralized billing & user management</Li><Li>MCP integration in all your apps</Li><Li>API access</Li></ul></div>
-        <div className="pl"><h2>Enterprise</h2><p className="d">Great for larger companies</p><div className="pr"><b>$35</b><span>per user per month</span></div><a className="dl">Sign up in app</a><a className="dl lt">Learn more</a>
+        <div className="pl"><h2>Enterprise</h2><p className="d">Great for larger companies</p><div className="pr"><b>$35</b><span>per user per month</span></div><a className="dl">Sign-up in app</a><a className="dl lt">Learn more</a>
           <ul><Li bold>Everything included in Business</Li><Li>Enterprise-grade security & admin controls</Li><Li>Single sign-on (SSO)</Li><Li>Priority support and usage analytics</Li><Li>Org-wide auto-deletion periods</Li><Li>Admin controls for sharing & API access</Li><Li>Opt out of model training for everyone in your team</Li><Li>Org-wide notification that the app is being used</Li></ul></div>
       </div>
       <p className="co">A small share of every subscription goes to carbon removal through a climate partner.</p>
