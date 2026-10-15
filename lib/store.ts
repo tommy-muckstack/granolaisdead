@@ -71,3 +71,28 @@ export const getDoc = <T>(col: string, id: string): Promise<T | null> => (useFir
 export const putDoc = <T>(col: string, id: string, doc: T): Promise<void> => (useFirestore() ? fsPut(col, id, doc) : filePut(col, id, doc));
 export const listDocs = <T>(col: string): Promise<T[]> => (useFirestore() ? fsList<T>(col) : fileList<T>(col));
 export const delDoc = (col: string, id: string): Promise<void> => (useFirestore() ? fsDel(col, id) : fileDel(col, id));
+
+/** After a guest signs in: move every per-user doc (docs keyed by the user id) from the guest id to the account, once. */
+export async function adoptGuestDocs(fromId: string, toId: string): Promise<number> {
+  if (!fromId || !toId || fromId === toId) return 0;
+  let moved = 0;
+  if (useFirestore()) {
+    const d = await db(); const prefix = `${appName()}__`;
+    for (const col of await d.listCollections()) {
+      if (!col.id.startsWith(prefix)) continue;
+      const src = await col.doc(safe(fromId)).get(); if (!src.exists) continue;
+      const dstRef = col.doc(safe(toId)); if ((await dstRef.get()).exists) continue;
+      await dstRef.set(src.data()!); await src.ref.delete(); moved++;
+    }
+  } else {
+    const root = dir();
+    let cols: string[] = []; try { cols = await fs.readdir(root); } catch { return 0; }
+    for (const col of cols) {
+      const from = path.join(root, col, `${safe(fromId)}.json`), to = path.join(root, col, `${safe(toId)}.json`);
+      try { await fs.access(from); } catch { continue; }
+      try { await fs.access(to); continue; } catch { /* no account doc yet */ }
+      await fs.rename(from, to); moved++;
+    }
+  }
+  return moved;
+}
