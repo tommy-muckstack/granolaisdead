@@ -1,3 +1,5 @@
+import { MeasuredPage } from "./m/MeasuredPage";
+import pm from "./m/pricing390.json";
 import Link from "next/link";
 import "./pk.css";
 import "./gnhome.css";
@@ -16,7 +18,8 @@ const TW = [
 
 export function GnPricing() {
   return (
-    <div className="gnh pk gpr">
+    <><MeasuredPage data={pm as never} className="gn-pm" display={/quadrant/} />
+    <div className="gnh pk gpr mp-desk">
       <GnNav />
       <h1 className="t">Notes how you wanna</h1>
       <p className="sub">Pick the plan that is right for you and your team, so everyone can be on the same page.</p>
@@ -53,6 +56,6 @@ export function GnPricing() {
       <div className="lgs">{["Linework", "Index", "Brix", "replica", "Lumable"].map((l) => <span key={l}>{l}</span>)}</div>
       <div className="gbox"><div className="win"><i /><i /><i /><h2>Ready for <em>calmer</em>, more productive meetings?</h2><p>Try it for a few meetings today. It's free to get started.</p><div className="bs"><a className="dl">Download for Mac</a><a className="dl lt">Download for Mobile</a></div></div></div>
       <div className="fw"><GnFoot /></div>
-    </div>
+    </div></>
   );
 }
