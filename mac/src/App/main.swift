@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Sparkle
 import SwiftUI
 
@@ -6,6 +7,38 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     private var updater: SPUStandardUpdaterController?
     private var statusItem: NSStatusItem?
+    private var menuBarTimer: Timer?
+    private var calendarSink: AnyCancellable?
+
+    /// Granola's menu-bar title: " Standup • in 5m" for the current event, or
+    /// the next one within 5 minutes; "now" for the first minute, then
+    /// "12m left".
+    private func updateMenuBarTitle() {
+        guard let b = statusItem?.button else { return }
+        let now = Date()
+        let ev = SettingsStore.shared.meetingInMenuBar
+            // Meetings only (people or a call link), like the reminders; the
+            // soonest-ending current one, or the next within 5 minutes.
+            ? CalendarStore.shared.upcoming
+                .filter { (!$0.attendees.isEmpty || $0.joinURL != nil) && ($0.isNow || ($0.start > now && $0.start.timeIntervalSince(now) <= 300)) }
+                .sorted { ($0.start > now ? 1 : 0, $0.start) < ($1.start > now ? 1 : 0, $1.start) }
+                .first : nil
+        guard let ev else { b.title = ""; statusItem?.length = NSStatusItem.squareLength; return }
+        let maxLen = (NSScreen.main?.frame.width ?? 1512) < 1600 ? 12 : 18
+        let name = ev.title.count > maxLen ? String(ev.title.prefix(maxLen)) + "…" : ev.title
+        let when: String
+        if ev.start > now {
+            let m = max(1, Int(ceil(ev.start.timeIntervalSince(now) / 60))); when = "in \(m)m"
+        } else if now.timeIntervalSince(ev.start) < 60 {
+            when = "now"
+        } else {
+            let m = Int(ceil(ev.end.timeIntervalSince(now) / 60)); when = m >= 60 ? "\(m / 60)h \(m % 60)m left" : "\(m)m left"
+        }
+        statusItem?.length = NSStatusItem.variableLength
+        b.imagePosition = .imageLeading
+        b.title = " \(name) • \(when)"
+        b.font = NSFont.menuBarFont(ofSize: 0)
+    }
     private let detector = MeetingDetector()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -18,6 +51,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         }
         installMenus()
         installStatusItem()
+        QuickChat.shared.registerHotkey()
+        menuBarTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in Task { @MainActor in self?.updateMenuBarTitle() } }
+        NotificationCenter.default.addObserver(forName: .gidMenuBarChanged, object: nil, queue: .main) { [weak self] _ in Task { @MainActor in self?.updateMenuBarTitle() } }
+        calendarSink = CalendarStore.shared.$upcoming.sink { [weak self] _ in Task { @MainActor in self?.updateMenuBarTitle() } }
         MainWindow.shared.show()
         if !SettingsStore.shared.hasOnboarded { Onboarding.shared.show() }
         else { SpeechModel.shared.prepare() }
@@ -54,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             }
         case "chat": AppModel.shared.go(.chat)
         case "search": AppModel.shared.searchPresented = true
+        case "quickchat": QuickChat.shared.show(); if parts.count > 1 { QuickChat.shared.ask(parts[1]) }
         case "settings": SettingsWindow.shared.show(tab: SettingsView.Tab(rawValue: parts.count > 1 ? parts[1] : "General") ?? .general)
         default: break
         }
@@ -114,6 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     @objc func toggleSidebar() { withAnimation(G.Motion.gentle) { AppModel.shared.sidebarVisible.toggle() } }
     @objc func search() { MainWindow.shared.show(); AppModel.shared.searchPresented = true }
     @objc func showMain() { MainWindow.shared.show() }
+    @objc func quickChat() { QuickChat.shared.show() }
     @objc func goHome() { AppModel.shared.go(.home) }
     @objc func openGitHub() { NSWorkspace.shared.open(URL(string: "https://github.com/tommy-muckstack/granolaisdead")!) }
     @objc func reportIssue() { NSWorkspace.shared.open(URL(string: "https://github.com/tommy-muckstack/granolaisdead/issues/new")!) }
@@ -185,6 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         let m = NSMenu()
         let open = NSMenuItem(title: "Open GranolaIsDead", action: #selector(showMain), keyEquivalent: ""); open.target = self; m.addItem(open)
         let rec = NSMenuItem(title: "New Note and Record", action: #selector(newRecording), keyEquivalent: ""); rec.target = self; m.addItem(rec)
+        let qc = NSMenuItem(title: "Quick Chat", action: #selector(quickChat), keyEquivalent: ""); qc.target = self; m.addItem(qc)
         let stop = NSMenuItem(title: "Start or Stop Recording", action: #selector(toggleRecording), keyEquivalent: ""); stop.target = self; m.addItem(stop)
         m.addItem(.separator())
         let set = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ""); set.target = self; m.addItem(set)

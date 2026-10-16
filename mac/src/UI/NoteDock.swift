@@ -57,6 +57,10 @@ struct NoteDock: View {
     @State private var asking = false
 
     private var isRecording: Bool { recorder.noteID == note.id }
+    /// Granola's action pill: after transcription stops, with a transcript and no notes yet.
+    private var showGeneratePill: Bool {
+        !isRecording && recorder.startingNoteID != note.id && note.hasTranscript && note.enhanced == nil && !model.enhancing.contains(note.id) && !recorder.finishing.contains(note.id)
+    }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -69,6 +73,13 @@ struct NoteDock: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             case .none:
                 EmptyView()
+            }
+            if panel == .none, showGeneratePill {
+                SuggestionChip(title: note.myNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Generate notes" : "Enhance notes", symbol: "sparkles") {
+                    model.enhance(note.id)
+                }
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if panel != .transcript {
                 AskBar(placeholder: "Ask anything", suggestion: note.hasTranscript ? "Write follow up email" : nil,
@@ -314,7 +325,7 @@ struct ChatBubble: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                Text(LocalizedStringKey(message.text)).font(G.Fonts.ui(15)).lineSpacing(4).textSelection(.enabled)
+                Text(displayMarkdown(message.text)).font(G.Fonts.ui(15)).lineSpacing(4).textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                 Button { copyToPasteboard(message.text); copied = true } label: {
                     Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc").font(G.Fonts.ui(12))

@@ -86,6 +86,24 @@ final class MeetingRecorder: ObservableObject {
     private var onFinished: [UUID: () -> Void] = [:]
     private var cancelStart = false
 
+    // MARK: Auto-stop (Granola's "Are you still there?" + call-ended)
+    /// AppModel routes auto-stops through its own stop so notes still generate.
+    var onAutoStop: ((AutoStopReason) -> Void)?
+    enum AutoStopReason { case silence(minutes: Int), callEnded }
+    static let silenceLimit: TimeInterval = 15 * 60
+    private var lastSpeechAt = Date()
+    private var callSeen = false
+    private var callMissing = 0
+    /// Consecutive 10 s polls a call app has held the mic.
+    private var callHeld = 0
+    /// Bumped on every start; async checks drop results from an older session.
+    private var generation = 0
+    private var ticks = 0
+    private var stillThereShown = false
+
+    /// "I'm still here" on the card.
+    func keepGoing() { lastSpeechAt = Date(); stillThereShown = false }
+
     // MARK: Start / stop
 
     func start(noteID id: UUID) async {
@@ -129,6 +147,8 @@ final class MeetingRecorder: ObservableObject {
         catch { systemAudioAvailable = false; NSLog("GranolaIsDead [Tap] start failed: \(error)") }
 
         noteID = id; isPaused = false; elapsed = 0; pausedTotal = 0; pausedAt = nil; startedClock = Date()
+        lastSpeechAt = Date(); callSeen = false; callMissing = 0; callHeld = 0; ticks = 0; stillThereShown = false
+        generation += 1
         store.update(id, immediately: true) { n in
             if n.startedAt == nil { n.startedAt = Date() }
             n.endedAt = nil
@@ -147,6 +167,8 @@ final class MeetingRecorder: ObservableObject {
         if isPaused { if let p = pausedAt { pausedTotal += Date().timeIntervalSince(p) }; pausedAt = nil }
         else { pausedAt = Date() }
         isPaused.toggle()
+        // A pause is a deliberate choice: never let the silence countdown end it.
+        StillThereCard.shared.hide(); stillThereShown = false; lastSpeechAt = Date()
         Analytics.track(isPaused ? "app_meeting_paused" : "app_meeting_resumed")
     }
 
@@ -174,6 +196,7 @@ final class MeetingRecorder: ObservableObject {
         Analytics.track("app_meeting_stopped", ["duration_bucket": Self.bucket(elapsed)])
         noteID = nil; isPaused = false; micLevel = 0; systemLevel = 0
         RecordingIndicator.shared.hide()
+        StillThereCard.shared.hide()
         if let then { onFinished[id] = then }
         finishing.insert(id)
         checkFinished(id)
@@ -191,7 +214,11 @@ final class MeetingRecorder: ObservableObject {
         }
         let sys = sysBuffer.take()
         micLevel = Self.level(mic); systemLevel = Self.level(sys)
-        guard !isPaused else { micLevel = 0; systemLevel = 0; return }
+        ticks += 1
+        if ticks % 40 == 0 { checkAutoStop() } // every 10 s
+        guard !isPaused else { micLevel = 0; systemLevel = 0; lastSpeechAt = Date(); return }
+        // Sound counts as activity even if transcription is behind or failing.
+        if max(micLevel, systemLevel) > 0.08 { lastSpeechAt = Date() }
         ingest(mic, mic: true)
         ingest(sys, mic: false)
     }
@@ -217,6 +244,7 @@ final class MeetingRecorder: ObservableObject {
                 self.inFlight[id, default: 1] -= 1
                 defer { self.checkFinished(id) }
                 guard Self.isSpeech(text) else { return }
+                if self.noteID == id { self.lastSpeechAt = Date(); if self.stillThereShown { self.keepGoing(); StillThereCard.shared.hide() } }
                 let seg = TranscriptSegment(speaker: mic ? "Me" : "Them", source: mic ? .mic : .system,
                                             start: chunk.start + offset, end: chunk.end + offset, text: text)
                 NoteStore.shared.update(id) { n in
@@ -238,6 +266,42 @@ final class MeetingRecorder: ObservableObject {
         finishing.remove(id)
         NoteStore.shared.flushAll()
         onFinished.removeValue(forKey: id)?()
+    }
+
+    private func checkAutoStop() {
+        guard let id = noteID, !isPaused else { return }
+        let current = generation
+        if !stillThereShown, Date().timeIntervalSince(lastSpeechAt) > Self.silenceLimit {
+            stillThereShown = true
+            StillThereCard.shared.show { [weak self] stop in
+                guard let self, self.noteID == id, self.generation == current, !self.isPaused else { return }
+                if stop { self.onAutoStop?(.silence(minutes: Int(Self.silenceLimit / 60))) } else { self.keepGoing() }
+            }
+        }
+        // The call app letting go of the mic means the call ended. A call
+        // only counts once it has held the mic for a while: 30 s for real call
+        // apps (Zoom, Teams, FaceTime, Webex), 2 min for browsers, WebKit
+        // helpers, Slack and Discord, so a voice clip or a page checking the
+        // mic during an in-person meeting never ends it. (No attribution on
+        // macOS < 14.4: then this never fires.)
+        Task {
+            let owners = await AudioCapture.processesUsingMicOffMain()
+            let own = Bundle.main.bundleIdentifier ?? ""
+            let calls = owners.filter { $0 != own && MeetingDetector.isCallBundle($0) }
+            await MainActor.run {
+                let strong = calls.contains { MeetingDetector.strongApps[$0] != nil && !MeetingDetector.residentApps.contains($0) }
+                guard self.noteID == id, self.generation == current, !self.isPaused else { return }
+                if !calls.isEmpty {
+                    self.callHeld += 1; self.callMissing = 0
+                    if self.callHeld >= (strong ? 3 : 12) { self.callSeen = true }
+                } else if !self.callSeen {
+                    self.callHeld = 0
+                } else {
+                    self.callMissing += 1
+                    if self.callMissing >= 3 { self.callSeen = false; self.onAutoStop?(.callEnded) } // ~30 s gone
+                }
+            }
+        }
     }
 
     // MARK: Helpers

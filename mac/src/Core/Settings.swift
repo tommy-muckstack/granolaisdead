@@ -12,6 +12,8 @@ final class SettingsStore: ObservableObject {
     @Published var calendarReminders: Bool { didSet { d.set(calendarReminders, forKey: "calendarReminders") } }
     @Published var autoEnhance: Bool { didSet { d.set(autoEnhance, forKey: "autoEnhance") } }
     @Published var showFloatingIndicator: Bool { didSet { d.set(showFloatingIndicator, forKey: "showFloatingIndicator") } }
+    @Published var quickChatHotkey: Bool { didSet { d.set(quickChatHotkey, forKey: "quickChatHotkey"); QuickChat.shared.registerHotkey() } }
+    @Published var meetingInMenuBar: Bool { didSet { d.set(meetingInMenuBar, forKey: "meetingInMenuBar"); NotificationCenter.default.post(name: .gidMenuBarChanged, object: nil) } }
     @Published var defaultTemplate: String { didSet { d.set(defaultTemplate, forKey: "defaultTemplate") } }
     @Published var appearance: String { didSet { d.set(appearance, forKey: "appearance"); applyAppearance() } }
     @Published var analyticsOptOut: Bool { didSet { d.set(analyticsOptOut, forKey: "analyticsOptOut") } }
@@ -20,11 +22,13 @@ final class SettingsStore: ObservableObject {
 
     private init() {
         d.register(defaults: ["detectMeetings": true, "calendarReminders": true, "autoEnhance": true,
-                              "showFloatingIndicator": true, "defaultTemplate": NoteTemplate.auto.id, "appearance": "system"])
+                              "showFloatingIndicator": true, "meetingInMenuBar": true, "quickChatHotkey": true, "defaultTemplate": NoteTemplate.auto.id, "appearance": "system"])
         detectMeetings = d.bool(forKey: "detectMeetings")
         calendarReminders = d.bool(forKey: "calendarReminders")
         autoEnhance = d.bool(forKey: "autoEnhance")
         showFloatingIndicator = d.bool(forKey: "showFloatingIndicator")
+        meetingInMenuBar = d.bool(forKey: "meetingInMenuBar")
+        quickChatHotkey = d.bool(forKey: "quickChatHotkey")
         defaultTemplate = d.string(forKey: "defaultTemplate") ?? NoteTemplate.auto.id
         appearance = d.string(forKey: "appearance") ?? "system"
         analyticsOptOut = d.bool(forKey: "analyticsOptOut")

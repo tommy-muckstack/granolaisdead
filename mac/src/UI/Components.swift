@@ -221,6 +221,19 @@ extension Date {
     }
 }
 
+/// Model answers are Markdown; SwiftUI renders inline styles but not list
+/// markers, so turn "- " / "* " / "1. " line starts into bullets first.
+func displayMarkdown(_ s: String) -> AttributedString {
+    let lines = s.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+        let indent = line.prefix { $0 == " " }
+        let body = line.dropFirst(indent.count)
+        if body.hasPrefix("- ") || body.hasPrefix("* ") { return String(indent) + "• " + body.dropFirst(2) }
+        return String(line)
+    }
+    let joined = lines.joined(separator: "\n")
+    return (try? AttributedString(markdown: joined, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(joined)
+}
+
 func copyToPasteboard(_ s: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(s, forType: .string)

@@ -55,4 +55,5 @@ enum Permissions {
 
 extension Notification.Name {
     static let gidPermissionsChanged = Notification.Name("gid.permissionsChanged")
+    static let gidMenuBarChanged = Notification.Name("gid.menuBarChanged")
 }
