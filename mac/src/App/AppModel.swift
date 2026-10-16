@@ -27,6 +27,20 @@ final class AppModel: ObservableObject {
     let store = NoteStore.shared
     let recorder = MeetingRecorder.shared
 
+    init() {
+        MeetingRecorder.shared.onAutoStop = { [weak self] reason in
+            guard let self, let id = self.recorder.noteID else { return }
+            self.stopRecording()
+            let msg: String
+            switch reason {
+            case .silence(let m): msg = "Stopped transcribing after \(m) minutes of silence."
+            case .callEnded: msg = "The call ended, so transcription stopped."
+            }
+            Toast.show(msg, systemImage: "pause.circle", actionLabel: "Resume", action: { [weak self] in self?.startRecording(id) })
+            Analytics.track("app_meeting_auto_stopped", ["reason": { if case .callEnded = reason { return "call_ended" } else { return "silence" } }()])
+        }
+    }
+
     func go(_ r: Route) {
         guard r != route else { return }
         back.append(route); if back.count > 30 { back.removeFirst() }
