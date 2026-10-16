@@ -1,6 +1,6 @@
 # GranolaIsDead for Mac
 
-A native SwiftUI meeting notepad that looks and works like Granola. Free, open source, no account.
+A native SwiftUI AI meeting notepad. Free, open source, no account.
 
 - **No bot.** Records your microphone ("Me") and your computer's audio ("Them", through a CoreAudio process tap). Nothing joins the call.
 - **On-device transcription.** Parakeet TDT 0.6B through [FluidAudio](https://github.com/FluidInference/FluidAudio), on the Neural Engine. The live transcript appears while people talk. The ~600 MB model downloads once.
@@ -52,6 +52,6 @@ Icon: `swift scripts/make-icon.swift && ./scripts/make-icns.sh`.
 
 ## Fonts
 
-Inter and IBM Plex Serif, both under the SIL Open Font License (see `src/Resources/Fonts/OFL-*.txt`). They are the open fonts Granola itself falls back to; its own fonts are proprietary and not shipped.
+Inter and IBM Plex Serif, both under the SIL Open Font License (see `src/Resources/Fonts/OFL-*.txt`). Both are open fonts; no proprietary fonts are shipped.
 
-Not affiliated with Granola. All trademarks belong to their owners.
+Independent project, not affiliated with Granola, Inc. All trademarks belong to their owners.

@@ -37,7 +37,7 @@ while IFS= read -r slice; do for fw in "$slice"/*.framework; do [ -d "$fw" ] && 
 [ -d "$PRODUCTS/${EXEC}_${EXEC}.bundle" ] && cp -R "$PRODUCTS/${EXEC}_${EXEC}.bundle" "$APP_DIR/Contents/Resources/"
 cp assets/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
 scripts/write-plist.sh "$APP_DIR/Contents/Info.plist" "$VERSION" "$BUILD_NUMBER"
-/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string 'Apache-2.0. Not affiliated with Granola.'" "$APP_DIR/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string 'Apache-2.0. Independent project, not affiliated with Granola, Inc.'" "$APP_DIR/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :SUAutomaticallyUpdate bool true" -c "Add :SUScheduledCheckInterval integer 3600" "$APP_DIR/Contents/Info.plist"
 
 echo "==> Signing (hardened runtime)..."

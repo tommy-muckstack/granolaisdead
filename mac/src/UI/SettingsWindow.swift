@@ -232,7 +232,7 @@ private struct AboutPane: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("GranolaIsDead \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
                 .font(G.Fonts.ui(15, .medium))
-            Text("A free, open-source Granola alternative. No account, no bot, no subscription. Not affiliated with Granola.")
+            Text("Free, open-source AI meeting notes. No account, no bot, no subscription. Independent project, not affiliated with Granola, Inc.")
                 .font(G.Fonts.ui(13.5)).foregroundStyle(G.Colors.textSecondary).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 PillButton { Text("Check for updates") } action: { (NSApp.delegate as? AppDelegate)?.checkForUpdates() }

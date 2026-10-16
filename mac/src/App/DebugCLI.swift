@@ -33,7 +33,7 @@ enum DebugCLI {
                 note.enhanced = e
                 note.title = "Onboarding launch plan"
                 note.myNotes = "free tier cap\nsoft launch monday"
-                note.attendees = [Attendee(name: "Sam Rivera", email: "sam@example.com")]
+                note.attendees = [Attendee(name: "Guest", email: "guest@example.com")]
                 note.startedAt = Date().addingTimeInterval(-3600); note.endedAt = Date().addingTimeInterval(-1800)
                 note.chat = []
                 let saved = NoteStore.shared.create { $0 = note }
