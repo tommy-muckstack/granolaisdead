@@ -12,7 +12,7 @@ GranolaIsDead is a **native Mac app** (in `mac/`). This repo's website is only i
 
 ## What the Mac app does
 - Records your microphone and the Mac's system audio, so it works with any meeting app and never joins the call as a bot.
-- Live, on-device transcription (Parakeet) with speaker separation.
+- Live, on-device transcription (Parakeet) with you and the other side labeled separately.
 - Granola-style enhanced notes: your own notes plus the transcript, shaped by templates. Generated on-device with Apple Foundation Models on macOS 26, or with your own Claude or OpenAI API key.
 - Chat with a meeting.
 - Calendar "coming up" list and meeting detection.
