@@ -1,30 +1,42 @@
 # GranolaIsDead
 
-Free, open-source Granola alternative. Part of the [IsDead series](https://yourappisdead.com). Served at `https://yourappisdead.com/granolaisdead`.
+Free, open-source Granola alternative for the Mac. Part of the [IsDead series](https://yourappisdead.com). Website served at `https://yourappisdead.com/granolaisdead`.
 
-**Status: open source, not deployed yet**. Surfaces follow `templates/marketing-site.md` in `@isdead/design`: one marketing page (`/`, price comparison at `#pricing`), `/login`, and the app at `/app`.
+Free. No account, no subscription, no meeting bot.
 
-## What works
-- **Notes workspace:** sidebar of meetings grouped by date, per-account storage, titles, templates (general, 1:1, stand-up, customer discovery, interview), sample meeting.
-- **Capture:** jot notes in a plain editor; record with the browser's SpeechRecognition (Chrome) or paste/edit a transcript (speaker labels like `Maya:` supported; timestamps ignored).
-- **Enhance (no LLM, runs locally):** extractive summary, key points routed into template sections by keywords, your own lines kept in black with the best-matching transcript sentence attached in gray, decisions, action items with owner and due date, open questions. Re-enhance, tick actions off, copy or download Markdown.
-- **Ask:** keyword retrieval over notes + transcript returns the matching lines with speakers (or says it can't find an answer).
-- 11 unit tests for parsing, extraction, enhancement and retrieval; Playwright smoke test in `npm run shots`.
+## Status
+GranolaIsDead is a **native Mac app** (in `mac/`). This repo's website is only its marketing page: there is no web app and no sign-in.
 
-## Known gaps
-- **Not generative AI:** summaries and notes are extractive (they quote the transcript) so they are less polished than Granola's, and action-item detection is pattern-based.
-- No system-audio capture (browser speech recognition uses the microphone, and Chrome sends audio to Google). No calendar integration, sharing links, folders or team workspaces.
-- Notes live in localStorage per account (no sync; Firestore is the next step).
+- **Download:** <https://yourappisdead.com/granolaisdead/download> redirects to the latest signed + notarized DMG on GitHub Releases (`releases/latest/download/GranolaIsDead.dmg`).
+- **Requirements:** macOS 14.2+, Apple silicon or Intel.
 
-## Auth
-Shared Firebase project `yourappisdead` (email/password + Google), helpers in `lib/isdead-auth` (vendored from `isdead-design/auth`). The session cookie `isdead_session` has path `/`, so one sign-in covers every IsDead app. Env: `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_JSON`. Without them, `/login` shows "Sign-in not configured". The single demo account ("Use the demo account") is available outside production or with `DEMO_MODE=1`.
+## What the Mac app does
+- Records your microphone and the Mac's system audio, so it works with any meeting app and never joins the call as a bot.
+- Live, on-device transcription (Parakeet) with you and the other side labeled separately.
+- Granola-style enhanced notes: your own notes plus the transcript, shaped by templates. Generated on-device with Apple Foundation Models on macOS 26, or with your own Claude or OpenAI API key.
+- Chat with a meeting.
+- Calendar "coming up" list and meeting detection.
+- Automatic updates via Sparkle.
 
-## Develop
+Not included: accounts, cloud sync, team sharing, Windows or iOS apps.
+
+## Mac app
+Build, run and release instructions live in [`mac/README.md`](mac/README.md).
+
+## Website
+Next.js (basePath `/granolaisdead`). Routes:
+- `/`: Granola look-alike marketing page; every download CTA goes to `/download`.
+- `/pricing`: what Granola charges vs. GranolaIsDead ($0).
+- `/download`: 307 to the latest GitHub release DMG.
+- Old web-app URLs (`/app/*`, `/login`, `/api/session/*`) permanently redirect to `/`.
+
+No environment variables are needed.
+
 ```
 npm install
 npm run dev        # http://localhost:3000/granolaisdead
 npm test           # unit tests
 npm run typecheck
-npm run build && npm run shots   # product screenshots + end-to-end smoke test (Playwright)
+npm run build
 ```
-Theme and font: `vendor/isdead-design` (OFL fonts, see `fonts/*/OFL-*.txt`). Not affiliated with Granola; all trademarks belong to their owners. Apache-2.0.
+Theme and font: `vendor/isdead-design` (OFL fonts, see `fonts/*/OFL-*.txt`). Not affiliated with Granola; all trademarks belong to their owners. Always get consent before recording a conversation. Apache-2.0.
