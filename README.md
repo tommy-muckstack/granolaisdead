@@ -1,6 +1,6 @@
 # GranolaIsDead
 
-Free, open-source Granola alternative for the Mac. Part of the [IsDead series](https://yourappisdead.com). Website served at `https://yourappisdead.com/granolaisdead`.
+Free, open-source AI meeting notes for the Mac. Part of the [IsDead series](https://yourappisdead.com). Website served at `https://yourappisdead.com/granolaisdead`.
 
 Free. No account, no subscription, no meeting bot.
 
@@ -13,7 +13,7 @@ GranolaIsDead is a **native Mac app** (in `mac/`). This repo's website is only i
 ## What the Mac app does
 - Records your microphone and the Mac's system audio, so it works with any meeting app and never joins the call as a bot.
 - Live, on-device transcription (Parakeet) with you and the other side labeled separately.
-- Granola-style enhanced notes: your own notes plus the transcript, shaped by templates. Generated on-device with Apple Foundation Models on macOS 26, or with your own Claude or OpenAI API key.
+- Enhanced notes: your own notes plus the transcript, shaped by templates. Generated on-device with Apple Foundation Models on macOS 26, or with your own Claude or OpenAI API key.
 - Chat with a meeting.
 - Calendar "coming up" list and meeting detection.
 - Automatic updates via Sparkle.
@@ -25,8 +25,8 @@ Build, run and release instructions live in [`mac/README.md`](mac/README.md).
 
 ## Website
 Next.js (basePath `/granolaisdead`). Routes:
-- `/`: Granola look-alike marketing page; every download CTA goes to `/download`.
-- `/pricing`: what Granola charges vs. GranolaIsDead ($0).
+- `/`: look-alike marketing page; every download CTA goes to `/download`.
+- `/pricing`: what paid AI notetakers charge vs. GranolaIsDead ($0).
 - `/download`: 307 to the latest GitHub release DMG.
 - Old web-app URLs (`/app/*`, `/login`, `/api/session/*`) permanently redirect to `/`.
 
