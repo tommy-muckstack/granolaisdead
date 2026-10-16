@@ -24,6 +24,8 @@ export function MeasuredPage({ data, className = "", skip, img, display, link, b
       if (!it.href) return <span key={i} className="mp-t" data-w={it.w} style={style}>{it.t}</span>;
       // Every download/get/try CTA downloads the Mac app; a page can override any link (external URLs render as <a>).
       const href = link?.(it) ?? (CTA.test(it.t || "") ? "/download" : "/");
+      // /download is a plain <a>: a Next <Link> would prefetch it and follow the 307 to GitHub.
+      if (href === "/download") return <a key={i} href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/download`} className="mp-t" data-w={it.w} style={style}>{it.t}</a>;
       return href.startsWith("/") ? <Link key={i} href={href} className="mp-t" data-w={it.w} style={style}>{it.t}</Link> : <a key={i} href={href} className="mp-t" data-w={it.w} style={style}>{it.t}</a>;
     })}
   </div>;
