@@ -23,13 +23,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         else { SpeechModel.shared.prepare() }
 
         CalendarStore.shared.onStartingSoon = { ev in
-            guard SettingsStore.shared.calendarReminders, !MeetingRecorder.shared.isRecording else { return }
+            guard SettingsStore.shared.calendarReminders, !MeetingRecorder.shared.isBusy else { return }
             MeetingPrompt.shared.show(title: ev.title, subtitle: "Starting in 1 minute", event: ev)
         }
         CalendarStore.shared.start()
-        detector.isOwnAudioActive = { MeetingRecorder.shared.isRecording }
+        detector.isOwnAudioActive = { MeetingRecorder.shared.isBusy }
         detector.onMeetingDetected = { app in
-            guard SettingsStore.shared.detectMeetings, !MeetingRecorder.shared.isRecording else { return }
+            guard SettingsStore.shared.detectMeetings, !MeetingRecorder.shared.isBusy else { return }
             let ev = CalendarStore.shared.upcoming.first { $0.isNow || abs($0.start.timeIntervalSinceNow) < 600 }
             MeetingPrompt.shared.show(title: ev?.title ?? "Meeting detected", subtitle: "\(app) is using your microphone", event: ev)
             Analytics.track("app_meeting_detected", ["app": app])
@@ -64,25 +64,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if MeetingRecorder.shared.isRecording {
+        let rec = MeetingRecorder.shared
+        if rec.isBusy {
             let a = NSAlert()
             a.messageText = "Stop recording and quit?"
             a.informativeText = "The transcript so far is saved."
             a.addButton(withTitle: "Stop and Quit"); a.addButton(withTitle: "Cancel")
             guard a.runModal() == .alertFirstButtonReturn else { return .terminateCancel }
-            MeetingRecorder.shared.stop()
+            rec.stop()
         }
-        NoteStore.shared.flushAll()
-        return .terminateNow
+        guard !rec.finishing.isEmpty else { NoteStore.shared.flushAll(sync: true); return .terminateNow }
+        // Let the last chunks finish transcribing (up to a minute), then write.
+        Task { @MainActor in
+            var waited = 0
+            while !rec.finishing.isEmpty, waited < 240 { try? await Task.sleep(for: .milliseconds(250)); waited += 1 }
+            NoteStore.shared.flushAll(sync: true)
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     // Never restart for an update in the middle of a meeting.
     nonisolated func updaterShouldRelaunchApplication(_ updater: SPUUpdater) -> Bool { true }
     nonisolated func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem, untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
-        let busy = MainActor.assumeIsolated { MeetingRecorder.shared.isRecording }
+        let busy = MainActor.assumeIsolated { MeetingRecorder.shared.isBusy || !MeetingRecorder.shared.finishing.isEmpty || !AppModel.shared.enhancing.isEmpty }
         guard busy else { return false }
         Task { @MainActor in
-            while MeetingRecorder.shared.isRecording { try? await Task.sleep(for: .seconds(5)) }
+            while MeetingRecorder.shared.isBusy || !MeetingRecorder.shared.finishing.isEmpty || !AppModel.shared.enhancing.isEmpty {
+                try? await Task.sleep(for: .seconds(5))
+            }
             installHandler()
         }
         return true

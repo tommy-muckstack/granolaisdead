@@ -64,9 +64,11 @@ final class NoteStore: ObservableObject {
         Recordings.delete(noteID: id)
     }
 
-    func flushAll() {
+    /// Write every pending change. `sync` waits for the disk (quit path).
+    func flushAll(sync: Bool = false) {
         for (id, work) in pendingWrites { work.cancel(); if let n = note(id) { write(n) } }
         pendingWrites.removeAll()
+        if sync { io.sync {} }
     }
 
     // MARK: Folders
@@ -137,15 +139,23 @@ enum Paths {
 }
 
 /// Audio files for a note: `<noteID>-mic.wav` and `<noteID>-system.wav`.
-/// Kept 14 days for re-transcription, then deleted; the transcript is the
+/// Kept 14 days, then deleted; the transcript is the
 /// durable artifact.
 enum Recordings {
-    static func micURL(_ id: UUID) -> URL { Paths.recordings.appendingPathComponent("\(id.uuidString)-mic.wav") }
-    static func systemURL(_ id: UUID) -> URL { Paths.recordings.appendingPathComponent("\(id.uuidString)-system.wav") }
+    /// `<noteID>-<track>[-<n>].wav`; a resumed recording gets the next free n.
+    static func nextURL(_ id: UUID, track: String) -> URL {
+        var n = 0
+        while true {
+            let name = n == 0 ? "\(id.uuidString)-\(track).wav" : "\(id.uuidString)-\(track)-\(n).wav"
+            let url = Paths.recordings.appendingPathComponent(name)
+            if !FileManager.default.fileExists(atPath: url.path) { return url }
+            n += 1
+        }
+    }
 
     static func delete(noteID: UUID) {
-        try? FileManager.default.removeItem(at: micURL(noteID))
-        try? FileManager.default.removeItem(at: systemURL(noteID))
+        let files = (try? FileManager.default.contentsOfDirectory(at: Paths.recordings, includingPropertiesForKeys: nil)) ?? []
+        for f in files where f.lastPathComponent.hasPrefix(noteID.uuidString) { try? FileManager.default.removeItem(at: f) }
     }
 
     static func cleanupOld(days: Int = 14) {

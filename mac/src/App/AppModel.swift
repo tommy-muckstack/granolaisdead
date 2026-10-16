@@ -61,6 +61,7 @@ final class AppModel: ObservableObject {
     }
 
     func startRecording(_ id: UUID) {
+        if recorder.startingNoteID != nil { return }
         if recorder.isRecording {
             if recorder.noteID == id { return }
             stopRecording()
@@ -69,7 +70,7 @@ final class AppModel: ObservableObject {
     }
 
     func stopRecording() {
-        guard let id = recorder.noteID else { return }
+        guard let id = recorder.noteID else { recorder.stop(); return } // cancels a start in progress
         recorder.stop { [weak self] in
             guard let self, let n = self.store.note(id) else { return }
             if SettingsStore.shared.autoEnhance, n.hasTranscript || !n.myNotes.isEmpty { self.enhance(id) }
@@ -77,12 +78,17 @@ final class AppModel: ObservableObject {
     }
 
     func toggleRecording(_ id: UUID) {
-        if recorder.noteID == id { stopRecording() } else { startRecording(id) }
+        if recorder.noteID == id || recorder.startingNoteID == id { stopRecording() } else { startRecording(id) }
     }
 
+    /// Enhance requests that arrived while one was running for the same note.
+    private var enhanceAgain: Set<UUID> = []
+
     func enhance(_ id: UUID, template: String? = nil) {
-        guard !enhancing.contains(id) else { return }
         if let template { store.update(id, immediately: true) { $0.templateID = template } }
+        // Already running: run once more when it finishes, with the latest
+        // transcript and template, instead of dropping the request.
+        guard !enhancing.contains(id) else { enhanceAgain.insert(id); return }
         guard let n = store.note(id) else { return }
         guard n.hasTranscript || !n.myNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             Toast.show("Record or type something first, then generate notes.", systemImage: "sparkles")
@@ -97,11 +103,12 @@ final class AppModel: ObservableObject {
                 if note.title.trimmingCharacters(in: .whitespaces).isEmpty { note.title = Self.suggestTitle(note) }
             }
             enhancing.remove(id)
+            if enhanceAgain.remove(id) != nil { enhance(id) }
         }
     }
 
     func delete(_ id: UUID) {
-        if recorder.noteID == id { recorder.stop() }
+        if recorder.noteID == id || recorder.startingNoteID == id { recorder.stop() }
         store.delete(id)
         if route == .note(id) { route = .home }
         back.removeAll { $0 == .note(id) }

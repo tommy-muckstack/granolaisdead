@@ -11,7 +11,9 @@ set -euo pipefail
 #        BLOB_READ_WRITE_TOKEN (or .vercel/.env / .env.local), APPLE_ID+APPLE_APP_PASSWORD (else keychain profile)
 cd "$(dirname "$0")/.."; ROOT="$(pwd)"
 APP_NAME="GranolaIsDead"; EXEC="GranolaIsDead"; SLUG="granolaisdead"
-VERSION="${RELEASE_VERSION:-0.1.0}"; BUILD_NUMBER="${RELEASE_BUILD:-1}"
+# Both are required: Sparkle compares sparkle:version (the build number), so a
+# new version with a reused build would never be offered to existing installs.
+VERSION="${RELEASE_VERSION:?set RELEASE_VERSION}"; BUILD_NUMBER="${RELEASE_BUILD:?set RELEASE_BUILD (must increase every release)}"
 TEAM_ID="${APPLE_TEAM_ID:-K8NAZ76CBQ}"; NOTARY_PROFILE="mumbls-notary"; SPARKLE_ACCOUNT="granolaisdead"
 BLOB_HOST="https://ihvfw4x5q9iy9zx1.public.blob.vercel-storage.com"; APPCAST_URL="$BLOB_HOST/$SLUG-appcast.xml"
 GH_REPO="tommy-muckstack/granolaisdead"
@@ -42,7 +44,8 @@ echo "==> Signing (hardened runtime)..."
 SP="$APP_DIR/Contents/Frameworks/Sparkle.framework/Versions/B"
 for x in "$SP"/XPCServices/*.xpc "$SP/Updater.app" "$SP/Autoupdate"; do [ -e "$x" ] && codesign --force --timestamp --options runtime --sign "$IDENTITY" "$x"; done
 for fw in "$APP_DIR"/Contents/Frameworks/*.framework; do codesign --force --timestamp --options runtime --sign "$IDENTITY" "$fw"; done
-codesign --force --deep --timestamp --options runtime --entitlements "$ROOT/direct.entitlements" --sign "$IDENTITY" "$APP_DIR"
+# No --deep: the nested Sparkle pieces above keep their own signatures/entitlements.
+codesign --force --timestamp --options runtime --entitlements "$ROOT/direct.entitlements" --sign "$IDENTITY" "$APP_DIR"
 codesign --verify --deep --strict --verbose=2 "$APP_DIR"
 
 notarize() { for i in 1 2 3; do

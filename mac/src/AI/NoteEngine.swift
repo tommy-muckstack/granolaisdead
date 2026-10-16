@@ -67,10 +67,17 @@ enum NoteEngine {
             var parts: [String] = []
             for window in Prompts.windows(note.transcriptTextWithTimes, size: 6000) {
                 let s = LanguageModelSession(instructions: Prompts.condenseInstructions)
-                if let r = try? await s.respond(to: "<<<TRANSCRIPT>>>\n\(window)\n<<<END>>>") {
-                    parts.append(r.content)
+                do { parts.append(try await s.respond(to: "<<<TRANSCRIPT>>>\n\(window)\n<<<END>>>").content) }
+                catch {
+                    // A refused/overflowed window still counts: keep its most
+                    // informative sentences instead of silently losing it.
+                    NSLog("GranolaIsDead [Notes] condense window failed: \(error)")
+                    let lines = window.split(separator: "\n").map(String.init)
+                    let picked = BasicEnhancer.keyPoints(lines.map { BasicEnhancer.Sentence(speaker: "", text: $0) }, max: 6, exclude: [])
+                    parts.append(picked.map { "- " + $0 }.joined(separator: "\n"))
                 }
             }
+            guard parts.contains(where: { !$0.isEmpty }) else { return nil }
             material = parts.joined(separator: "\n")
             while material.count > 7000 {
                 var next: [String] = []
@@ -85,7 +92,9 @@ enum NoteEngine {
         }
         let session = LanguageModelSession(instructions: Prompts.enhanceInstructions(template: template))
         do {
-            let r = try await session.respond(to: Prompts.enhanceInput(note, transcript: material))
+            var trimmed = note
+            if trimmed.myNotes.count > 3000 { trimmed.myNotes = String(trimmed.myNotes.prefix(3000)) } // on-device context is small
+            let r = try await session.respond(to: Prompts.enhanceInput(trimmed, transcript: material))
             return r.content
         } catch {
             NSLog("GranolaIsDead [Notes] on-device failed: \(error)")

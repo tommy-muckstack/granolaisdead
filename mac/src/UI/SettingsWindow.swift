@@ -215,7 +215,7 @@ private struct TranscriptionPane: View {
                 case .idle: PillButton { Text("Download") } action: { speech.prepare() }
                 }
             }
-            SettingRow(title: "Recordings", detail: "Audio files are kept 14 days for re-transcription, then deleted. Transcripts and notes stay until you delete them.") {
+            SettingRow(title: "Recordings", detail: "Audio files are kept 14 days, then deleted. Transcripts and notes stay until you delete them.") {
                 PillButton { Text("Show in Finder") } action: { NSWorkspace.shared.activateFileViewerSelecting([Paths.support]) }
             }
         }

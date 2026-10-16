@@ -22,18 +22,29 @@ final class SpeechModel: ObservableObject {
     }
 }
 
-/// Parakeet is not safe under interleaved calls: one actor serializes every
-/// transcription, live chunks and re-runs alike.
+/// One shared model load; chunks recorded while the model is still
+/// downloading wait for it instead of being dropped. (Parakeet's AsrManager is
+/// itself an actor, so interleaved chunks are safe.)
 actor Transcriber {
     static let shared = Transcriber()
     private let service = TranscriptionService.shared
+    private var loading: Task<Void, Never>?
     var isReady: Bool { service.isReady }
 
     func load(progress: @escaping @Sendable (Double) -> Void) async {
-        await service.load(kind: .parakeet, progress: progress)
+        if service.isReady { return }
+        if let loading { await loading.value; return }
+        let svc = service
+        let t = Task { await svc.load(kind: .parakeet, progress: progress) }
+        loading = t
+        await t.value
+        loading = nil
     }
 
     func transcribe(_ samples: [Float]) async -> String {
+        if !service.isReady {
+            if let loading { await loading.value } else { await load { _ in } }
+        }
         guard service.isReady else { return "" }
         return await service.transcribe(samples)
     }
@@ -56,6 +67,9 @@ final class MeetingRecorder: ObservableObject {
     @Published private(set) var finishing: Set<UUID> = []
 
     var isRecording: Bool { noteID != nil }
+    /// The note a start is in progress for (permission prompt, device spin-up).
+    @Published private(set) var startingNoteID: UUID?
+    var isBusy: Bool { isRecording || startingNoteID != nil }
 
     private var micSession: UUID?
     private var tap: SystemAudioTap?
@@ -68,34 +82,45 @@ final class MeetingRecorder: ObservableObject {
     private var startedClock = Date()
     private var pausedTotal: TimeInterval = 0
     private var pausedAt: Date?
-    private var inFlight = 0
+    private var inFlight: [UUID: Int] = [:]
     private var onFinished: [UUID: () -> Void] = [:]
-    private var starting = false
+    private var cancelStart = false
 
     // MARK: Start / stop
 
     func start(noteID id: UUID) async {
-        guard !isRecording, !starting else { return }
-        starting = true; defer { starting = false }
+        guard !isBusy else { return }
+        startingNoteID = id; cancelStart = false
+        defer { startingNoteID = nil }
         guard await Permissions.requestMicrophone() else {
             Toast.show("GranolaIsDead needs the microphone to transcribe. Turn it on in System Settings.", systemImage: "mic.slash")
             Permissions.openPrivacy(.microphone)
             return
         }
         SpeechModel.shared.prepare()
+        // Resuming right after Stop: let the previous session's last chunks
+        // land first, so its notes callback can't fire mid-recording and the
+        // new lines start after the old ones.
+        var waited = 0
+        while finishing.contains(id), waited < 480, !cancelStart { try? await Task.sleep(for: .milliseconds(250)); waited += 1 }
+        finishing.remove(id); onFinished[id] = nil
         let store = NoteStore.shared
+        guard !cancelStart, store.note(id) != nil else { return }
         let offset = store.note(id)?.transcript.map(\.end).max() ?? 0 // resuming appends after existing lines
         micChunker = SpeechChunker(); sysChunker = SpeechChunker()
         timeOffset = offset
-        micWriter = WavWriter(url: Recordings.micURL(id).appendingSuffix(offset))
-        sysWriter = WavWriter(url: Recordings.systemURL(id).appendingSuffix(offset))
+        let session: UUID
         do {
-            micSession = try await AudioCapture.shared.begin(.raw)
+            session = try await AudioCapture.shared.begin(.raw)
         } catch {
             Toast.show("Couldn’t start the microphone.", systemImage: "mic.slash")
-            micWriter = nil; sysWriter = nil
             return
         }
+        // Stopped or deleted while the mic was spinning up.
+        guard !cancelStart, store.note(id) != nil else { _ = AudioCapture.shared.end(session); return }
+        micSession = session
+        micWriter = WavWriter(url: Recordings.nextURL(id, track: "mic"))
+        sysWriter = WavWriter(url: Recordings.nextURL(id, track: "system"))
         let t = SystemAudioTap()
         let buffer = sysBuffer
         buffer.reset()
@@ -128,7 +153,10 @@ final class MeetingRecorder: ObservableObject {
     /// Stop capturing. Final chunks keep transcribing; `then` runs once the
     /// transcript is complete (enhanced notes are generated there).
     func stop(then: (() -> Void)? = nil) {
-        guard let id = noteID else { return }
+        guard let id = noteID else {
+            if startingNoteID != nil { cancelStart = true }
+            return
+        }
         tick()
         timer?.invalidate(); timer = nil
         if let micSession {
@@ -180,13 +208,13 @@ final class MeetingRecorder: ObservableObject {
     }
 
     private func transcribe(_ chunk: SpeechChunker.Chunk, mic: Bool, note id: UUID) {
-        inFlight += 1
+        inFlight[id, default: 0] += 1
         let offset = timeOffset
         Task {
             let text = await Transcriber.shared.transcribe(chunk.samples)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             await MainActor.run {
-                self.inFlight -= 1
+                self.inFlight[id, default: 1] -= 1
                 defer { self.checkFinished(id) }
                 guard Self.isSpeech(text) else { return }
                 let seg = TranscriptSegment(speaker: mic ? "Me" : "Them", source: mic ? .mic : .system,
@@ -205,7 +233,8 @@ final class MeetingRecorder: ObservableObject {
     }
 
     private func checkFinished(_ id: UUID) {
-        guard finishing.contains(id), inFlight == 0 else { return }
+        guard finishing.contains(id), (inFlight[id] ?? 0) == 0 else { return }
+        inFlight[id] = nil
         finishing.remove(id)
         NoteStore.shared.flushAll()
         onFinished.removeValue(forKey: id)?()
@@ -240,13 +269,4 @@ final class SampleBuffer: @unchecked Sendable {
     func append(_ s: [Float]) { lock.lock(); samples.append(contentsOf: s); lock.unlock() }
     func take() -> [Float] { lock.lock(); defer { samples = []; lock.unlock() }; return samples }
     func reset() { lock.lock(); samples = []; lock.unlock() }
-}
-
-private extension URL {
-    /// A resumed recording writes a second WAV next to the first.
-    func appendingSuffix(_ offset: Double) -> URL {
-        guard offset > 0 else { return self }
-        let base = deletingPathExtension().lastPathComponent
-        return deletingLastPathComponent().appendingPathComponent("\(base)-\(Int(offset)).wav")
-    }
 }
