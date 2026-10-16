@@ -59,7 +59,7 @@ struct NoteDock: View {
     private var isRecording: Bool { recorder.noteID == note.id }
     /// Granola's action pill: after transcription stops, with a transcript and no notes yet.
     private var showGeneratePill: Bool {
-        !isRecording && note.hasTranscript && note.enhanced == nil && !model.enhancing.contains(note.id) && !recorder.finishing.contains(note.id)
+        !isRecording && recorder.startingNoteID != note.id && note.hasTranscript && note.enhanced == nil && !model.enhancing.contains(note.id) && !recorder.finishing.contains(note.id)
     }
 
     var body: some View {

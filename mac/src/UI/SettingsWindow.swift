@@ -94,6 +94,7 @@ struct SettingRow<Trailing: View>: View {
 
 private struct GeneralPane: View {
     @EnvironmentObject var s: SettingsStore
+    @ObservedObject private var quick = QuickChat.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SettingRow(title: "Detect meetings", detail: "Offer to take notes when Zoom, Meet, Teams, FaceTime, Slack or Webex starts using the mic.") { Toggle("", isOn: $s.detectMeetings).toggleStyle(.switch).labelsHidden() }
@@ -101,8 +102,11 @@ private struct GeneralPane: View {
             SettingRow(title: "Generate notes when a meeting ends", detail: "Turns your notes and the transcript into enhanced notes automatically.") { Toggle("", isOn: $s.autoEnhance).toggleStyle(.switch).labelsHidden() }
             SettingRow(title: "Show floating recording indicator", detail: "A small pill on the edge of the screen while transcribing.") { Toggle("", isOn: $s.showFloatingIndicator).toggleStyle(.switch).labelsHidden() }
             SettingRow(title: "Show upcoming meetings in menu bar", detail: "\"Standup • in 5m\" next to the menu-bar icon.") { Toggle("", isOn: $s.meetingInMenuBar).toggleStyle(.switch).labelsHidden() }
-            SettingRow(title: "Quick Chat", detail: QuickChat.shared.hotkeyLabel.map { "Press \($0) anywhere to ask about your meetings." } ?? "Shortcut unavailable (another app uses ⌥Space and ⌃⌥Space). Open it from the menu-bar icon.") {
-                PillButton { Text("Try it") } action: { QuickChat.shared.show() }
+            SettingRow(title: "Quick Chat shortcut", detail: !s.quickChatHotkey ? "Off. Open Quick Chat from the menu-bar icon." : quick.hotkeyLabel.map { "Press \($0) anywhere to ask about your meetings." } ?? "Unavailable (another app uses ⌥Space and ⌃⌥Space). Open it from the menu-bar icon.") {
+                HStack(spacing: 10) {
+                    PillButton { Text("Try it") } action: { QuickChat.shared.show() }
+                    Toggle("", isOn: $s.quickChatHotkey).toggleStyle(.switch).labelsHidden()
+                }
             }
             SettingRow(title: "Default template") {
                 Picker("", selection: $s.defaultTemplate) { ForEach(NoteTemplate.all) { Text("\($0.symbol) \($0.name)").tag($0.id) } }.labelsHidden().frame(width: 220)

@@ -17,7 +17,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         guard let b = statusItem?.button else { return }
         let now = Date()
         let ev = SettingsStore.shared.meetingInMenuBar
-            ? CalendarStore.shared.upcoming.first { ($0.isNow) || ($0.start > now && $0.start.timeIntervalSince(now) <= 300) } : nil
+            // Meetings only (people or a call link), like the reminders; the
+            // soonest-ending current one, or the next within 5 minutes.
+            ? CalendarStore.shared.upcoming
+                .filter { (!$0.attendees.isEmpty || $0.joinURL != nil) && ($0.isNow || ($0.start > now && $0.start.timeIntervalSince(now) <= 300)) }
+                .sorted { ($0.start > now ? 1 : 0, $0.start) < ($1.start > now ? 1 : 0, $1.start) }
+                .first : nil
         guard let ev else { b.title = ""; statusItem?.length = NSStatusItem.squareLength; return }
         let maxLen = (NSScreen.main?.frame.width ?? 1512) < 1600 ? 12 : 18
         let name = ev.title.count > maxLen ? String(ev.title.prefix(maxLen)) + "…" : ev.title
