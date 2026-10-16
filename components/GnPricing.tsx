@@ -5,56 +5,72 @@ import "./pk.css";
 import "./gnhome.css";
 import "./gnpricing.css";
 import { GnNav, GnFoot } from "./GnHome";
+import type { Measured } from "./m/MeasuredPage";
+import { GH } from "@/site.config";
 
 type Cell = 0 | 1 | string;
-const CATS: [string, number, [string, Cell, Cell, Cell][]][] = [["CAPTURE & NOTES", 56.45, [["AI meeting notes", 1, 1, 1], ["Bot-free, device-audio capture", 1, 1, 1], ["Desktop, iOS, Android & Apple Watch apps", 1, 1, 1], ["Speaker tagging", 1, 1, 1], ["Customized note templates", 1, 1, 1], ["Multi-language support", 1, 1, 1], ["Recipes", 1, 1, 1], ["Pre-meeting briefs", 0, 1, 1], ["Follow-up mails", 0, 1, 1], ["Workspace-wide dictionary", 0, 1, 1], ["Let people know you're using the app", "Per user", "Per user", "Admin-enforceable"]]], ["HISTORY & SEARCH", 53, [["Meeting history", "30 days", "Unlimited", "Unlimited"], ["AI chat across meetings", "Auto only", "Auto + model selection", "Auto + model selection"], ["Workspace usage analytics", 0, 0, 1]]], ["COLLABORATION & INTEGRATIONS", 60, [["Shared folders", 1, 1, 1], ["Integrations with chat tools", 1, 1, 1], ["Integrations with docs and CRM tools", 0, 1, 1], ["Advanced integrations", 0, 0, 1], ["MCP connectors for assistants", "Personal notes only", "Personal and public workspace notes", "Admin-configurable workspace notes"], ["API access", 0, 1, 1], ["Admin controls for connectors", 0, 0, 1], ["Centralized billing & user management", 0, 1, 1]]], ["TRUST & CONTROL", 57.5, [["Configurable transcript retention", "Per user", "Per user", "Workspace-wide admin policy"], ["Workspace-wide sharing settings", 0, 1, 1], ["Model training opt-out", "Per user", "Per user", "Workspace-wide"], ["Audio deleted after transcription", 1, 1, 1], ["Security attestation", 1, 1, 1], ["Regulated workspace mode", 0, 0, 1], ["DPA available", 1, 1, 1], ["Single sign-on", 0, 0, 1], ["Group provisioning", 0, 0, 1], ["Device management", 0, 0, 1], ["Audit API", 0, 0, 1]]], ["SUPPORT", 57, [["Join Labs (early access)", 1, 1, 1]]]];
+// Column 1 is GranolaIsDead (the free Mac app); columns 2-3 are Granola's paid plans, for comparison.
+const CATS: [string, number, [string, Cell, Cell, Cell][]][] = [["CAPTURE & NOTES", 80, [["AI meeting notes", 1, 1, 1], ["Bot-free, device-audio capture", 1, 1, 1], ["Live transcription", "On-device (Parakeet)", 1, 1], ["Speaker separation", 1, 1, 1], ["Customized note templates", 1, 1, 1], ["Chat with a meeting", 1, 1, 1], ["Upcoming meetings and meeting detection", 1, 1, 1], ["Pre-meeting briefs", 0, 1, 1], ["Follow-up emails", 0, 1, 1], ["Apps", "Mac", "Desktop & mobile", "Desktop & mobile"]]], ["HISTORY & PRIVACY", 80, [["Meeting history", "Unlimited", "Unlimited", "Unlimited"], ["Where notes live", "On your Mac", "Granola's cloud", "Granola's cloud"], ["AI model", "On-device, or your own Claude / OpenAI key", "Auto + model selection", "Auto + model selection"], ["Account required", "No", "Yes", "Yes"]]], ["COLLABORATION & INTEGRATIONS", 80, [["Shared folders", 0, 1, 1], ["Integrations with docs and CRM tools", 0, 1, 1], ["MCP connectors for assistants", 0, 1, 1], ["API access", 0, 1, 1], ["Single sign-on", 0, 0, 1], ["Centralized billing & user management", "No billing at all", 1, 1]]], ["SOURCE & UPDATES", 80, [["Open source", "Apache-2.0", 0, 0], ["Automatic updates", 1, 1, 1], ["Price", "$0", "$14 per user / mo", "$35 per user / mo"]]]];
 const Ck = () => <span className="ck"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.3l2.3 2.3 4.7-5" fill="none" stroke="#5e6b1c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg></span>;
 const cell = (c: Cell) => c === 1 ? <Ck /> : c === 0 ? <span className="dash">–</span> : <span className="tx">{c}</span>;
 const Li = ({ children, bold }: { children: React.ReactNode; bold?: boolean }) => <li className={bold ? "bd" : ""}><Ck />{children}</li>;
-const FAQ = ["What's the difference between the plans?", "What admin controls will I have?", "What are your integration capabilities?", "Do you train any models on my data?", "Is the product SOC 2 / HIPAA compliant?", "Does it support SSO?", "What SSO providers are supported?", "How do you notify other participants that notes are being taken?"];
+const FAQ: [string, string][] = [["Is it really free?", "Yes. Every feature, no plans, no seats."], ["Do I need an account?", "No. Download it, open it, record."], ["Does it join my calls as a bot?", "Never. It records your Mac's mic and system audio."], ["Where is my data stored?", "On your Mac. There is no sync and no server."], ["Which AI writes the notes?", "Apple's on-device model on macOS 26, or your own Claude or OpenAI key."], ["What do I need to run it?", "macOS 14.2 or later, on Apple silicon or Intel."], ["Is there a Windows or iPhone app?", "No. GranolaIsDead is a Mac app only."], ["How do I let other participants know notes are being taken?", "Tell them at the start of the call. Always get consent before recording."]];
+const FA = { fontFamily: "var(--ids-font-sans)", fontSize: 14, lineHeight: "20px", color: "#555", width: 330, textAlign: "right" } as const;
+// Mobile (<=900px) layout: Granola's measured pricing page, with copy rewritten for GranolaIsDead and the sections that only describe Granola cut out.
+const MTEXT: Record<number, string> = { 287: "Download", 288: "Notes how you wanna", 289: "Every feature is free. Here's what Granola", 290: "charges for the same meeting notes.", 291: "GranolaIsDead", 292: "Free and open source, forever", 294: "no account, no seats", 295: "Download for Mac", 297: "Unlimited meeting history", 298: "Chat with any meeting", 299: "Speaker separation", 301: "Live on-device transcription", 302: "Nothing leaves your Mac by default", 303: "Granola Business", 304: "What Granola charges small teams", 307: "Download free instead", 308: "Everything in Granola Basic, plus", 317: "Granola Enterprise", 318: "What Granola charges larger companies", 321: "Download free instead", 322: "View source", 323: "Everything in Granola Business", 475: "Source code", 476: "Read every line on GitHub", 477: "License", 478: "Apache-2.0, use it however you like", 479: "Issues", 480: "Questions, bugs and ideas", 540: "Try it in your next meeting.", 541: "Free, no account needed.", 542: "Download for Mac", 543: "View source on GitHub", 578: "© GranolaIsDead" };
+const MLINK: Record<string, string> = { "View source": GH, "Source code": GH, "Read every line on GitHub": GH, "License": GH + "/blob/main/LICENSE", "Apache-2.0, use it however you like": GH + "/blob/main/LICENSE", "Issues": GH + "/issues", "Questions, bugs and ideas": GH + "/issues", "View source on GitHub": GH, "Pricing": "/pricing" };
+// y-ranges (px in the 390 layout) to remove: Granola's carbon note, customer quote, plan table and FAQ; then its tweets and customer logos.
+const MCUT: [number, number][] = [[2000, 6760], [7360, 9220]];
+function mobile(d: Measured): Measured {
+  const gone = (p: number) => MCUT.reduce((a, [y0, y1]) => a + Math.min(Math.max(p - y0, 0), y1 - y0), 0);
+  const items = d.items.map((it, n) => (MTEXT[n] ? { ...it, t: MTEXT[n] } : it))
+    .filter((it) => !MCUT.some(([y0, y1]) => it.y >= y0 && it.y < y1))
+    .map((it) => { const y = it.y - gone(it.y); return { ...it, y, h: it.y + it.h - gone(it.y + it.h) - y }; });
+  return { ...d, H: d.H - gone(d.H), items };
+}
 const TW = [
   { x: 118, y: 5924, h: 297 }, { x: 118, y: 6242, h: 280 }, { x: 530, y: 5906, h: 262 }, { x: 530, y: 6191, h: 480 }, { x: 933, y: 5906, h: 312 }, { x: 933, y: 6247, h: 206 },
 ];
 
 export function GnPricing() {
   return (
-    <><MeasuredPage data={pm as never} className="gn-pm" display={/quadrant/} />
+    <><MeasuredPage data={mobile(pm as unknown as Measured)} className="gn-pm" display={/quadrant/} link={(i) => MLINK[i.t ?? ""]} />
     <div className="gnh pk gpr mp-desk">
       <GnNav />
       <h1 className="t">Notes how you wanna</h1>
-      <p className="sub">Pick the plan that is right for you and your team, so everyone can be on the same page.</p>
+      <p className="sub">Every feature is free. Here&apos;s what you&apos;d pay Granola for the same meeting notes.</p>
       <div className="plans">
-        <div className="pl"><h2>Basic</h2><p className="d">Great for a free taste of the app</p><div className="pr"><b>$0</b><span>per user per month</span></div><a className="dl"><i className="ap"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2.1-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.4 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.6-1.3z" /></svg></i><span className="dkd">Download for Mac</span><span className="mbd">Get the Desktop app</span></a>
-          <ul><Li>AI meeting notes</Li><Li>Limited meeting history</Li><Li>AI chat within and across meetings</Li><Li>Shared folders for collaboration</Li><Li>Customized note templates</Li><Li>Multi-language support</Li><Li>Opt out of model training at any time</Li></ul></div>
-        <div className="pl"><h2>Business</h2><p className="d">Great for individuals or small teams</p><div className="pr"><b>$14</b><span>per user per month</span></div><a className="dl"><i className="ap"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2.1-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.4 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.6-1.3z" /></svg></i><span className="dkd">Download for Mac</span><span className="mbd">Get the Desktop app</span></a>
-          <ul><Li bold>Everything in Basic, plus</Li><Li>Unlimited meeting notes and history</Li><Li>Access to advanced AI thinking models and features</Li><Li>Advanced integrations with docs, CRM and chat tools</Li><Li>Centralized billing & user management</Li><Li>MCP integration in all your apps</Li><Li>API access</Li></ul></div>
-        <div className="pl"><h2>Enterprise</h2><p className="d">Great for larger companies</p><div className="pr"><b>$35</b><span>per user per month</span></div><a className="dl">Sign-up in app</a><a className="dl lt">Learn more</a>
-          <ul><Li bold>Everything included in Business</Li><Li>Enterprise-grade security & admin controls</Li><Li>Single sign-on (SSO)</Li><Li>Priority support and usage analytics</Li><Li>Org-wide auto-deletion periods</Li><Li>Admin controls for sharing & API access</Li><Li>Opt out of model training for everyone in your team</Li><Li>Org-wide notification that the app is being used</Li></ul></div>
+        <div className="pl"><h2>GranolaIsDead</h2><p className="d">Every feature, free and open source</p><div className="pr"><b>$0</b><span>no account, no seats</span></div><Link href="/download" className="dl"><i className="ap"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2.1-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.4 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.6-1.3z" /></svg></i><span className="dkd">Download for Mac</span><span className="mbd">Download for Mac</span></Link>
+          <ul><Li>Live on-device transcription</Li><Li>Unlimited meeting history</Li><Li>Enhanced notes with templates</Li><Li>Speaker separation</Li><Li>Chat with any meeting</Li><Li>Upcoming meetings and meeting detection</Li><Li>On-device AI, or your own Claude / OpenAI key</Li></ul></div>
+        <div className="pl"><h2>Granola Business</h2><p className="d">What Granola charges small teams</p><div className="pr"><b>$14</b><span>per user per month</span></div><Link href="/download" className="dl"><i className="ap"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" aria-hidden><path d="M16.7 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.2-2.8.8-3.5.8s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2.1-1.1 2.8-2.2c.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8zM14.4 5.8c.6-.8 1.1-1.8.9-2.8-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.6-1.3z" /></svg></i><span className="dkd">Download free instead</span><span className="mbd">Download free instead</span></Link>
+          <ul><Li bold>Everything in Granola Basic, plus</Li><Li>Unlimited meeting notes and history</Li><Li>Access to advanced AI thinking models and features</Li><Li>Advanced integrations with docs, CRM and chat tools</Li><Li>Centralized billing & user management</Li><Li>MCP integration in all your apps</Li><Li>API access</Li></ul></div>
+        <div className="pl"><h2>Granola Enterprise</h2><p className="d">What Granola charges larger companies</p><div className="pr"><b>$35</b><span>per user per month</span></div><Link href="/download" className="dl">Download free instead</Link><a href={GH} className="dl lt">View source</a>
+          <ul><Li bold>Everything included in Granola Business</Li><Li>Enterprise-grade security & admin controls</Li><Li>Single sign-on (SSO)</Li><Li>Priority support and usage analytics</Li><Li>Org-wide auto-deletion periods</Li><Li>Admin controls for sharing & API access</Li><Li>Opt out of model training for everyone in your team</Li><Li>Org-wide notification that the app is being used</Li></ul></div>
       </div>
-      <p className="co">A small share of every subscription goes to carbon removal through a climate partner.</p>
-      <blockquote className="q">“As we rebuilt our product into an AI-native company, we needed tools that move fast without ever compromising accuracy. This one earned our trust by delivering precise, reliable summaries, and helped strengthen our written culture.”</blockquote>
-      <div className="au"><i /><span><b>Alex Rivera</b><br />Founder and CEO, Northwind</span></div>
-      <a className="cs2">Read the case study</a>
+      <p className="co">Granola list prices as of October 2026; check Granola&apos;s pricing page for today&apos;s numbers. GranolaIsDead has no paid plan.</p>
+      <blockquote className="q">“Every feature is in the free download. No seats, no plans, no 30-day history limit, and nothing leaves your Mac unless you choose a cloud model.”</blockquote>
+      <div className="au"><i /><span><b>GranolaIsDead</b><br />Apache-2.0, open source</span></div>
+      <a href={GH} className="cs2">Read the code</a>
       <h2 className="cmp">Compare plans</h2>
       <table className="tb">
-        <thead><tr><th>Features</th><th><b>Basic</b><span>Get started ›</span></th><th><b>Business</b><span>Get started ›</span></th><th><b>Enterprise</b><span>Learn more ›</span></th></tr></thead>
+        <thead><tr><th>Features</th><th><b>GranolaIsDead</b><Link href="/download" style={{ float: "right", color: "#555" }}>Download ›</Link></th><th><b>Granola Business</b></th><th><b>Granola Enterprise</b></th></tr></thead>
         <tbody>
           {CATS.map(([cat, rh, rows]) => [
             <tr key={cat} className="cat"><td colSpan={4}>{cat}</td></tr>,
             ...rows.map((r) => <tr key={cat + r[0]} style={{ height: rh }}><td>{r[0]}</td><td>{cell(r[1])}</td><td>{cell(r[2])}</td><td>{cell(r[3])}</td></tr>),
           ])}
-          <tr style={{ height: 51 }}><td>Support level</td><td><span className="tx">Standard</span></td><td><span className="tx">Standard</span></td><td><span className="tx">Dedicated</span></td></tr>
+          <tr style={{ height: 51 }}><td>Support level</td><td><a href={GH + "/issues"} className="tx">Community (GitHub issues)</a></td><td><span className="tx">Standard</span></td><td><span className="tx">Dedicated</span></td></tr>
         </tbody>
       </table>
       <h2 className="nt">Things worth noting</h2>
-      <div className="faq">{FAQ.map((f, i) => <div key={f} className={"fq" + (i === 7 ? " last" : "")}><span>{f}</span><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 5l4 4 4-4" fill="none" stroke="#1f1f1f" strokeWidth="1.4" /></svg></div>)}</div>
+      <div className="faq">{FAQ.map(([q, ans], i) => <div key={q} className={"fq" + (i === 7 ? " last" : "")}><span style={i === 7 ? { width: 400 } : undefined}>{q}</span><small style={FA}>{ans}</small></div>)}</div>
       <h2 className="rs">Resources</h2>
-      <div className="rcs">{[["Security", "How we secure your data & privacy", "#5e6b1c"], ["Policies", "Everything you need to know over terms", "#6c8cd6"], ["Other FAQs", "All other questions you may have", "#8a63d2"]].map(([a, b, c]) => <div key={a} className="rc"><i style={{ background: c }} /><h3>{a}</h3><p>{b}</p></div>)}</div>
-      <h2 className="ppl">What people are saying</h2>
+      <div className="rcs">{[["Source code", "Read every line on GitHub", "#5e6b1c", GH], ["License", "Apache-2.0, use it however you like", "#6c8cd6", GH + "/blob/main/LICENSE"], ["Issues", "Questions, bugs and ideas", "#8a63d2", GH + "/issues"]].map(([a, b, c, h]) => <a key={a} href={h} className="rc" style={{ display: "block", color: "inherit" }}><i style={{ background: c }} /><h3>{a}</h3><p>{b}</p></a>)}</div>
+      <h2 className="ppl">Built in the open</h2>
       {TW.map((t, i) => <div key={i} className="tw" style={{ left: t.x, top: t.y, height: t.h }}><span className="av" /><b /><em /><s /><s /><s style={{ width: "60%" }} /><u /></div>)}
-      <h2 className="hp">Helping the world's best product teams focus more on their meetings</h2>
-      <div className="lgs">{["Linework", "Index", "Brix", "replica", "Lumable"].map((l) => <span key={l}>{l}</span>)}</div>
-      <div className="gbox"><div className="win"><i /><i /><i /><h2>Ready for <em>calmer</em>, more productive meetings?</h2><p>Try it for a few meetings today. It's free to get started.</p><div className="bs"><a className="dl">Download for Mac</a><a className="dl lt">Download for Mobile</a></div></div></div>
+      <h2 className="hp">Works with every meeting app you already use</h2>
+      <div className="lgs">{["Zoom", "Meet", "Teams", "Slack", "Webex"].map((l) => <span key={l}>{l}</span>)}</div>
+      <div className="gbox"><div className="win"><i /><i /><i /><h2>Ready for <em>calmer</em>, more productive meetings?</h2><p>Try it in your next meeting. It&apos;s free, no account needed.</p><div className="bs"><Link href="/download" className="dl">Download for Mac</Link><a href={GH} className="dl lt">View source on GitHub</a></div></div></div>
       <div className="fw"><GnFoot /></div>
     </div></>
   );
