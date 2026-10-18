@@ -15,4 +15,9 @@ describe("analytics privacy", () => {
     const e = scrub({ event: "$pageview", properties: { $current_url: "https://yourappisdead.com/granolaisdead/pricing?q=secret#h", title: "Someone's file", n: 1 } });
     expect(e.properties).toEqual({ $current_url: "https://yourappisdead.com/granolaisdead/pricing", n: 1 });
   });
+  it("cleans every URL-like key, including nested $set / $set_once person properties", () => {
+    const e = scrub({ event: "$pageview", properties: { $session_entry_url: "https://yourappisdead.com/granolaisdead/pricing?ref=x#y", $session_entry_pathname: "/granolaisdead/pricing", $set_once: { $initial_current_url: "https://yourappisdead.com/granolaisdead/pricing?utm_source=x" } }, $set: { $current_url: "https://yourappisdead.com/granolaisdead/?q=1" } });
+    expect(e.properties.$session_entry_url).toBe("https://yourappisdead.com/granolaisdead/pricing"); expect(e.properties.$session_entry_pathname).toBe("/granolaisdead/pricing");
+    expect(e.properties.$set_once.$initial_current_url).toBe("https://yourappisdead.com/granolaisdead/pricing"); expect(e.$set.$current_url).toBe("https://yourappisdead.com/granolaisdead/");
+  });
 });
